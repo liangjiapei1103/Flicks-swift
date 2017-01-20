@@ -14,6 +14,7 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
 
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var searchBar: UISearchBar!
+    @IBOutlet weak var networkErrorView: UIView!
     
     var movies: [NSDictionary]?
     
@@ -25,6 +26,19 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         tableView.dataSource = self
         tableView.delegate = self
         searchBar.delegate = self
+        
+        // Check whether internet is available
+        if Reachability.isConnectedToNetwork()
+        {
+            print("Internet Connection Available!")
+            networkErrorView.isHidden = true
+        }
+        else
+        {
+            print("Internet Connection not Available!")
+            networkErrorView.isHidden = false
+            
+        }
         
         // Initialize a UIRefreshControl
         let refreshControl = UIRefreshControl()
@@ -168,6 +182,51 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         // Show all movies again
         filteredMovies = movies
         tableView.reloadData()
+    }
+    
+    
+    @IBAction func refresh(_ sender: Any) {
+        
+        // Check whether internet is available
+        if Reachability.isConnectedToNetwork()
+        {
+            print("Internet Connection Available!")
+            networkErrorView.isHidden = true
+            
+            let apiKey = "d495b21c5c2a1a4a346cc03313315968"
+            let url = URL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=\(apiKey)")!
+            let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)
+            let session = URLSession(configuration: .default, delegate: nil, delegateQueue: OperationQueue.main)
+            
+            // Display HUD right before the request is made
+            MBProgressHUD.showAdded(to: self.view, animated: true)
+            
+            let task: URLSessionDataTask = session.dataTask(with: request) { (data: Data?, response: URLResponse?, error: Error?) in
+                
+                // Hide HUD once the network request comes back (must be done on main UI thread)
+                MBProgressHUD.hide(for: self.view, animated: true)
+                
+                if let data = data {
+                    if let dataDictionary = try! JSONSerialization.jsonObject(with: data, options: []) as? NSDictionary {
+                        print(dataDictionary)
+                        
+                        self.movies = dataDictionary["results"] as! [NSDictionary]
+                        self.filteredMovies = self.movies
+                        
+                        // Reload the tableView now that there is new data
+                        self.tableView.reloadData()
+                    }
+                }
+            }
+            
+            task.resume()
+        }
+        else
+        {
+            print("Internet Connection not Available!")
+            networkErrorView.isHidden = false
+            
+        }
     }
     
     /*
