@@ -10,11 +10,13 @@ import UIKit
 import AFNetworking
 import MBProgressHUD
 
-class MoviesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
+class MoviesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate, UICollectionViewDataSource, UICollectionViewDelegate {
 
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var searchBar: UISearchBar!
     @IBOutlet weak var networkErrorView: UIView!
+    
+    @IBOutlet weak var collectionView: UICollectionView!
     
     var movies: [NSDictionary]?
     
@@ -26,6 +28,9 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         tableView.dataSource = self
         tableView.delegate = self
         searchBar.delegate = self
+        
+        collectionView.dataSource = self
+        collectionView.delegate = self
         
         // Check whether internet is available
         if Reachability.isConnectedToNetwork()
@@ -131,13 +136,15 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
             
             if let data = data {
                 if let dataDictionary = try! JSONSerialization.jsonObject(with: data, options: []) as? NSDictionary {
-                    print(dataDictionary)
                     
                     self.movies = dataDictionary["results"] as! [NSDictionary]
                     self.filteredMovies = self.movies
                     
                     // Reload the tableView now that there is new data
                     self.tableView.reloadData()
+                    
+                    // Reload the collectionView now that there is new data
+                    self.collectionView.reloadData()
                     
                     // Tell the refreshControl to stop spinning
                     refreshControl.endRefreshing()
@@ -166,6 +173,9 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         })
         
         tableView.reloadData()
+        
+        // Reload the collectionView now that there is new data
+        self.collectionView.reloadData()
     }
 
     // show cancel button on search bar
@@ -215,6 +225,9 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
                         
                         // Reload the tableView now that there is new data
                         self.tableView.reloadData()
+                        
+                        // Reload the collectionView now that there is new data
+                        self.collectionView.reloadData()
                     }
                 }
             }
@@ -229,6 +242,59 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         }
     }
     
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        
+        if let filteredMovies = filteredMovies {
+            print("FilteredMovies: \(filteredMovies.count)")
+            return filteredMovies.count
+        } else {
+            print("FilteredMovies: 0")
+            return 0;
+        }
+        
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "CollectionViewCell", for: indexPath) as! CollectionViewCell
+        
+        let movie = filteredMovies![indexPath.row]
+        
+        let title = movie["title"] as! String
+        
+        let baseUrl = "http://image.tmdb.org/t/p/w342"
+        let posterPath = movie["poster_path"] as! String
+        
+        let imageUrl = baseUrl + posterPath
+        
+        let imageRequest = NSURLRequest(url: NSURL(string: imageUrl)! as URL)
+        
+        cell.title.text = title
+
+        cell.posterImageView.setImageWith(imageRequest as URLRequest, placeholderImage: nil, success: { (imageRequest, imageResponse, image) in
+            
+            // imageResponse will be nil if the image is cached
+            if imageResponse != nil {
+                print("Image was NOT cached, fade in image")
+                cell.posterImageView.alpha = 0.0
+                cell.posterImageView.image = image
+                UIView.animate(withDuration: 0.3, animations: { () -> Void in
+                    cell.posterImageView.alpha = 1.0
+                })
+            } else {
+                print("Image was cached so just update the image")
+                cell.posterImageView.image = image
+            }
+            
+        }, failure: {
+            (imageRequest, imageResponse, error) -> Void in
+            print("Failed to load image")
+        })
+        
+        return cell
+        
+    }
     /*
     // MARK: - Navigation
 
