@@ -36,11 +36,12 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         tableView.insertSubview(refreshControl, at: 0)
         
         refreshControlAction(refreshControl: refreshControl)
-       
-        
-        
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -67,11 +68,31 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         let baseUrl = "http://image.tmdb.org/t/p/w342"
         let posterPath = movie["poster_path"] as! String
         
-        let imageUrl = NSURL(string: baseUrl + posterPath)
+        let imageUrl = baseUrl + posterPath
+        
+        let imageRequest = NSURLRequest(url: NSURL(string: imageUrl)! as URL)
         
         cell.titleLabel.text = title
         cell.overviewLabel.text = overview
-        cell.posterImageView.setImageWith(imageUrl! as URL)
+        cell.posterImageView.setImageWith(imageRequest as URLRequest, placeholderImage: nil, success: { (imageRequest, imageResponse, image) in
+            
+            // imageResponse will be nil if the image is cached
+            if imageResponse != nil {
+                print("Image was NOT cached, fade in image")
+                cell.posterImageView.alpha = 0.0
+                cell.posterImageView.image = image
+                UIView.animate(withDuration: 0.3, animations: { () -> Void in
+                    cell.posterImageView.alpha = 1.0
+                })
+            } else {
+                print("Image was cached so just update the image")
+                cell.posterImageView.image = image
+            }
+            
+        }, failure: {
+            (imageRequest, imageResponse, error) -> Void in
+            print("Failed to load image")
+        })
         
         return cell
     }
@@ -133,6 +154,22 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         tableView.reloadData()
     }
 
+    // show cancel button on search bar
+    func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
+        self.searchBar.showsCancelButton = true
+    }
+    
+    // When cancel button is clicked, clear searchtext, show all movies, hide cancel button
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.showsCancelButton = false
+        searchBar.text = ""
+        searchBar.resignFirstResponder()
+        
+        // Show all movies again
+        filteredMovies = movies
+        tableView.reloadData()
+    }
+    
     /*
     // MARK: - Navigation
 
