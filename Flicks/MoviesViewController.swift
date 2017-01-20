@@ -16,6 +16,9 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     @IBOutlet weak var searchBar: UISearchBar!
     @IBOutlet weak var networkErrorView: UIView!
     
+    @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
+    
+    
     @IBOutlet weak var collectionView: UICollectionView!
     
     var movies: [NSDictionary]?
@@ -45,6 +48,13 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
             
         }
         
+        // Flowlayout
+        flowLayout.scrollDirection = .vertical
+        flowLayout.minimumLineSpacing = 0
+        flowLayout.minimumInteritemSpacing = 0
+        flowLayout.sectionInset = UIEdgeInsetsMake(0, 0, 0, 0)
+        
+        
         // Initialize a UIRefreshControl
         let refreshControl = UIRefreshControl()
         
@@ -53,6 +63,9 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         
         // add refresh control to table view
         tableView.insertSubview(refreshControl, at: 0)
+        
+        // add refresh control to collection view
+        collectionView.insertSubview(refreshControl, at: 0)
         
         refreshControlAction(refreshControl: refreshControl)
     }
@@ -83,6 +96,7 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         
         let title = movie["title"] as! String
         let overview = movie["overview"] as! String
+        
         
         let baseUrl = "http://image.tmdb.org/t/p/w342"
         let posterPath = movie["poster_path"] as! String
@@ -262,6 +276,7 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         let movie = filteredMovies![indexPath.row]
         
         let title = movie["title"] as! String
+        let rating = movie["vote_average"] as! NSNumber
         
         let baseUrl = "http://image.tmdb.org/t/p/w342"
         let posterPath = movie["poster_path"] as! String
@@ -271,6 +286,7 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         let imageRequest = NSURLRequest(url: NSURL(string: imageUrl)! as URL)
         
         cell.title.text = title
+        cell.rating.text = "\(rating)"
 
         cell.posterImageView.setImageWith(imageRequest as URLRequest, placeholderImage: nil, success: { (imageRequest, imageResponse, image) in
             
