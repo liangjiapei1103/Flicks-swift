@@ -10,9 +10,8 @@ import UIKit
 import AFNetworking
 import MBProgressHUD
 
-class MoviesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate, UICollectionViewDataSource, UICollectionViewDelegate {
+class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionViewDataSource, UICollectionViewDelegate {
 
-    @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var searchBar: UISearchBar!
     @IBOutlet weak var networkErrorView: UIView!
     
@@ -25,11 +24,11 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     
     var filteredMovies: [NSDictionary]?
     
+    var endpoint: String!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        tableView.dataSource = self
-        tableView.delegate = self
+        
         searchBar.delegate = self
         
         collectionView.dataSource = self
@@ -54,15 +53,27 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         flowLayout.minimumInteritemSpacing = 0
         flowLayout.sectionInset = UIEdgeInsetsMake(0, 0, 0, 0)
         
+        // Update Navigation title
+        if endpoint == "now_playing" {
+            self.navigationItem.title = "Now Playing"
+        } else if endpoint == "top_rated" {
+            self.navigationItem.title = "Top Rated"
+        }
+        
+        // Remove back button text
+        self.navigationItem.backBarButtonItem = UIBarButtonItem(title: "", style: .plain, target: nil, action: nil)
+        
+        // Update navigation bar barTintColor and tintColor
+        if let navigationBar = navigationController?.navigationBar {
+            navigationBar.tintColor = UIColor.white
+            navigationBar.barTintColor = UIColor.black
+        }
         
         // Initialize a UIRefreshControl
         let refreshControl = UIRefreshControl()
         
         // Bind the action to the refresh control
         refreshControl.addTarget(self, action: #selector(refreshControlAction(refreshControl:)), for: UIControlEvents.valueChanged)
-        
-        // add refresh control to table view
-        tableView.insertSubview(refreshControl, at: 0)
         
         // add refresh control to collection view
         collectionView.insertSubview(refreshControl, at: 0)
@@ -78,66 +89,20 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
-    
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        
-        if let filteredMovies = filteredMovies {
-            return filteredMovies.count
-        } else {
-            return 0;
-        }
-        
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "MovieCell", for: indexPath) as! MovieCell
-        
-        let movie = filteredMovies![indexPath.row]
-        
-        let title = movie["title"] as! String
-        let overview = movie["overview"] as! String
-        
-        
-        let baseUrl = "http://image.tmdb.org/t/p/w342"
-        let posterPath = movie["poster_path"] as! String
-        
-        let imageUrl = baseUrl + posterPath
-        
-        let imageRequest = NSURLRequest(url: NSURL(string: imageUrl)! as URL)
-        
-        cell.titleLabel.text = title
-        cell.overviewLabel.text = overview
-        cell.posterImageView.setImageWith(imageRequest as URLRequest, placeholderImage: nil, success: { (imageRequest, imageResponse, image) in
-            
-            // imageResponse will be nil if the image is cached
-            if imageResponse != nil {
-                print("Image was NOT cached, fade in image")
-                cell.posterImageView.alpha = 0.0
-                cell.posterImageView.image = image
-                UIView.animate(withDuration: 0.3, animations: { () -> Void in
-                    cell.posterImageView.alpha = 1.0
-                })
-            } else {
-                print("Image was cached so just update the image")
-                cell.posterImageView.image = image
-            }
-            
-        }, failure: {
-            (imageRequest, imageResponse, error) -> Void in
-            print("Failed to load image")
-        })
-        
-        return cell
-    }
+
     
     // Makes a network request to get updated data
-    // Updates the tableView with the new data
+    // Updates the collectionView with the new data
     // Hides the RefreshControl
     func refreshControlAction(refreshControl: UIRefreshControl) {
         
         let apiKey = "d495b21c5c2a1a4a346cc03313315968"
-        let url = URL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=\(apiKey)")!
-        let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)
+        
+        print(endpoint)
+        
+        let url = URL(string: "https://api.themoviedb.org/3/movie/" + endpoint + "?api_key=\(apiKey)")
+        
+        let request = URLRequest(url: url!, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)
         let session = URLSession(configuration: .default, delegate: nil, delegateQueue: OperationQueue.main)
         
         // Display HUD right before the request is made
@@ -151,19 +116,14 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
             if let data = data {
                 if let dataDictionary = try! JSONSerialization.jsonObject(with: data, options: []) as? NSDictionary {
                     
-                    self.movies = dataDictionary["results"] as! [NSDictionary]
+                    self.movies = dataDictionary["results"] as? [NSDictionary]
                     self.filteredMovies = self.movies
-                    
-                    // Reload the tableView now that there is new data
-                    self.tableView.reloadData()
                     
                     // Reload the collectionView now that there is new data
                     self.collectionView.reloadData()
                     
                     // Tell the refreshControl to stop spinning
                     refreshControl.endRefreshing()
-                    
-                    
                 }
             }
         }
@@ -186,8 +146,6 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
             return title.range(of: searchText, options: .caseInsensitive) != nil
         })
         
-        tableView.reloadData()
-        
         // Reload the collectionView now that there is new data
         self.collectionView.reloadData()
     }
@@ -205,55 +163,17 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         
         // Show all movies again
         filteredMovies = movies
-        tableView.reloadData()
+        collectionView.reloadData()
     }
     
     
     @IBAction func refresh(_ sender: Any) {
         
-        // Check whether internet is available
-        if Reachability.isConnectedToNetwork()
-        {
-            print("Internet Connection Available!")
-            networkErrorView.isHidden = true
-            
-            let apiKey = "d495b21c5c2a1a4a346cc03313315968"
-            let url = URL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=\(apiKey)")!
-            let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)
-            let session = URLSession(configuration: .default, delegate: nil, delegateQueue: OperationQueue.main)
-            
-            // Display HUD right before the request is made
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-            
-            let task: URLSessionDataTask = session.dataTask(with: request) { (data: Data?, response: URLResponse?, error: Error?) in
-                
-                // Hide HUD once the network request comes back (must be done on main UI thread)
-                MBProgressHUD.hide(for: self.view, animated: true)
-                
-                if let data = data {
-                    if let dataDictionary = try! JSONSerialization.jsonObject(with: data, options: []) as? NSDictionary {
-                        print(dataDictionary)
-                        
-                        self.movies = dataDictionary["results"] as! [NSDictionary]
-                        self.filteredMovies = self.movies
-                        
-                        // Reload the tableView now that there is new data
-                        self.tableView.reloadData()
-                        
-                        // Reload the collectionView now that there is new data
-                        self.collectionView.reloadData()
-                    }
-                }
-            }
-            
-            task.resume()
-        }
-        else
-        {
-            print("Internet Connection not Available!")
-            networkErrorView.isHidden = false
-            
-        }
+        // Reset filteredMovies to all movies
+        self.filteredMovies = self.movies
+        
+        // Reload the collectionView now that there is new data
+        self.collectionView.reloadData()
     }
     
     
@@ -273,44 +193,96 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "CollectionViewCell", for: indexPath) as! CollectionViewCell
         
+        // Set selection backgroundcolor to gray
+        let backgroundView = UIView()
+        backgroundView.backgroundColor = UIColor.gray
+        cell.selectedBackgroundView = backgroundView
+        
         let movie = filteredMovies![indexPath.row]
         
         let title = movie["title"] as! String
-        let rating = movie["vote_average"] as! NSNumber
-        
-        let baseUrl = "http://image.tmdb.org/t/p/w342"
-        let posterPath = movie["poster_path"] as! String
-        
-        let imageUrl = baseUrl + posterPath
-        
-        let imageRequest = NSURLRequest(url: NSURL(string: imageUrl)! as URL)
+        let rating = String(format: "%.1f", movie["vote_average"] as! Float)
         
         cell.title.text = title
-        cell.rating.text = "\(rating)"
-
-        cell.posterImageView.setImageWith(imageRequest as URLRequest, placeholderImage: nil, success: { (imageRequest, imageResponse, image) in
+        cell.rating.text = rating
+        
+        let lowResolutionBaseUrl = "http://image.tmdb.org/t/p/w45"
+        let highResolutionBaseUrl = "http://image.tmdb.org/t/p/original"
+        
+        if let posterPath = movie["poster_path"] as? String {
+            let lowResolutionImageUrl = lowResolutionBaseUrl + posterPath
+            let highResolutionImageUrl = highResolutionBaseUrl + posterPath
             
-            // imageResponse will be nil if the image is cached
-            if imageResponse != nil {
-                print("Image was NOT cached, fade in image")
+            let lowResolutionImageRequest = NSURLRequest(url: NSURL(string: lowResolutionImageUrl)! as URL)
+            let highResolutionImageRequest = NSURLRequest(url: NSURL(string: highResolutionImageUrl)! as URL)
+            
+            
+            cell.posterImageView.setImageWith(lowResolutionImageRequest as URLRequest, placeholderImage: nil, success: { (lowResolutionImageRequest, lowResolutionImageResponse, lowResolutionImage) -> Void in
+                
+                //if lowResolutionImageResponse != nil  {
+                print("download low resolution image")
                 cell.posterImageView.alpha = 0.0
-                cell.posterImageView.image = image
+                cell.posterImageView.image = lowResolutionImage
+                
                 UIView.animate(withDuration: 0.3, animations: { () -> Void in
+                    
                     cell.posterImageView.alpha = 1.0
+                    
+                }, completion: { (success) -> Void in
+                    
+                    
+                    
+                    // Start download high resolution image
+                    cell.posterImageView.setImageWith(highResolutionImageRequest as URLRequest, placeholderImage: nil, success: { (highResolutionImageRequest, highResolutionImageResponse, highResolutionImage) -> Void in
+                        
+                        if highResolutionImageResponse != nil {
+                            print("start download high resolution image")
+                        } else {
+                            print("high resolution image was cached")
+                        }
+                        
+                        cell.posterImageView.image = highResolutionImage
+                        
+                    }, failure: ({ (request, response, error) -> Void in
+                        
+                        print("Load high resolution image failed")
+                        
+                    }))
+                    
+                    
+                    
                 })
-            } else {
-                print("Image was cached so just update the image")
-                cell.posterImageView.image = image
-            }
+                
+                
+            }, failure: {
+                (imageRequest, imageResponse, error) -> Void in
+                print("Failed to load image")
+            })
             
-        }, failure: {
-            (imageRequest, imageResponse, error) -> Void in
-            print("Failed to load image")
-        })
+            
+            
+        }
+ 
         
         return cell
         
     }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        let cell = sender as! UICollectionViewCell
+        let indexPath = collectionView.indexPath(for: cell)
+        let movie = movies![indexPath!.row]
+        
+        let detailViewController = segue.destination as! DetailViewController
+        
+        detailViewController.movie = movie
+        
+        detailViewController.navigationItem.title = movie["title"] as? String
+        
+        // Deselect collection view after segue
+        self.collectionView.deselectItem(at: indexPath!, animated: true)
+    }
+    
     /*
     // MARK: - Navigation
 

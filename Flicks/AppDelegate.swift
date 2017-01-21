@@ -16,6 +16,37 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        // Set status bar to light
+        UIApplication.shared.statusBarStyle = .lightContent
+        
+        window = UIWindow(frame: UIScreen.main.bounds)
+        
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        
+        let nowPlayingNavigationController = storyboard.instantiateViewController(withIdentifier: "MoviesNavigationController") as! UINavigationController
+        let nowPlayingViewController = nowPlayingNavigationController.topViewController as! MoviesViewController
+        nowPlayingViewController.endpoint = "now_playing"
+        nowPlayingViewController.tabBarItem.title = "Now Playing"
+        nowPlayingViewController.tabBarItem.image = UIImage(named: "now_playing")
+        
+        
+        let topRatedNavigationController = storyboard.instantiateViewController(withIdentifier: "MoviesNavigationController") as! UINavigationController
+        let topRatedViewController = topRatedNavigationController.topViewController as! MoviesViewController
+        topRatedViewController.endpoint = "top_rated"
+        topRatedViewController.tabBarItem.title = "Top Rated"
+        topRatedViewController.tabBarItem.image = UIImage(named: "top_rated")
+        
+        let tabBarController = UITabBarController()
+        tabBarController.viewControllers = [nowPlayingNavigationController, topRatedNavigationController]
+        
+        window?.rootViewController = tabBarController
+        window?.makeKeyAndVisible()
+        
+        // Customize Tab bar style
+        UITabBar.appearance().tintColor = UIColor.white
+        UITabBar.appearance().barTintColor = UIColor.black
+        
         return true
     }
 
