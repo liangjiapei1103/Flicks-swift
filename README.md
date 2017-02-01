@@ -64,7 +64,7 @@ Describe any challenges encountered while building the app.
 
 **Flicks** is a movies app displaying box office and top rental DVDs using [The Movie Database API](http://docs.themoviedb.apiary.io/#).
 
-Time spent: **7** hours spent in total
+Time spent: **10** hours spent in total
 
 ## User Stories
 
@@ -83,6 +83,7 @@ The following **additional** features are implemented:
 
 - [X] Set status bar to light Content
 - [X] Customize the tab bar
+- [X] Cache images so that when scrolling, images won't be downloaded again and again
 
 Please list two areas of the assignment you'd like to **discuss further with your peers** during the next class (examples include better ways to implement something, how to extend your app in certain ways, etc):
 
