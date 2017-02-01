@@ -80,7 +80,7 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         
         
         // Initialize a UIRefreshControl
-        let refreshControl = UIRefreshControl()
+        refreshControl = UIRefreshControl()
         
         
         // Bind the action to the refresh control
@@ -115,7 +115,12 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         let url = URL(string: "https://api.themoviedb.org/3/movie/" + endpoint + "?api_key=\(apiKey)")
         
         let request = URLRequest(url: url!, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)
-        let session = URLSession(configuration: .default, delegate: nil, delegateQueue: OperationQueue.main)
+        let session = { () -> URLSession in 
+            let configuration = URLSessionConfiguration.default
+            configuration.timeoutIntervalForRequest = 5
+            configuration.timeoutIntervalForResource = 5
+            return URLSession(configuration: configuration, delegate: nil, delegateQueue: OperationQueue.main)
+        }()
         
         // Display HUD right before the request is made
         MBProgressHUD.showAdded(to: self.view, animated: true)
@@ -141,8 +146,12 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
                     refreshControl.endRefreshing()
                         
 
-                    
+                    self.networkErrorView.isHidden = true
                 }
+            } else {
+                print("Failed to fetch data")
+                self.networkErrorView.isHidden = false
+                
             }
         }
         
@@ -186,6 +195,8 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
     
     
     @IBAction func refresh(_ sender: Any) {
+        
+        refreshControlAction(refreshControl: refreshControl)
         
         // Reset filteredMovies to all movies
         self.filteredMovies = self.movies
