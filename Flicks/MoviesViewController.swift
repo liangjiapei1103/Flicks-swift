@@ -29,11 +29,16 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
     var lowResolutionImages: [UIImage?]!
     var highResolutionImages: [UIImage?]!
     
+    var filteredLowResolutionImages: [String: UIImage?]!
+    var filteredHighResolutionImages: [String: UIImage?]!
+    
     var refreshControl: UIRefreshControl!
     var refreshLoadingView: UIView!
     var refreshColorView: UIView!
     var isRefreshIconsOverlap = false
     var isRefreshAnimating = false
+    
+    var isSearching = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -173,6 +178,11 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
             return title.range(of: searchText, options: .caseInsensitive) != nil
         })
         
+        //self.lowResolutionImages = [UIImage?](repeating: nil, count: (filteredMovies?.count)!)
+        //self.highResolutionImages = [UIImage?](repeating: nil, count: (filteredMovies?.count)!)
+        
+        
+        
         // Reload the collectionView now that there is new data
         self.collectionView.reloadData()
     }
@@ -180,6 +190,7 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
     // show cancel button on search bar
     func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
         self.searchBar.showsCancelButton = true
+        isSearching = true
     }
     
     // When cancel button is clicked, clear searchtext, show all movies, hide cancel button
@@ -187,6 +198,8 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         searchBar.showsCancelButton = false
         searchBar.text = ""
         searchBar.resignFirstResponder()
+        
+        isSearching = false
         
         // Show all movies again
         filteredMovies = movies
@@ -249,7 +262,7 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
             let highResolutionImageRequest = NSURLRequest(url: NSURL(string: highResolutionImageUrl)! as URL)
 
             
-            if ((lowResolutionImages[indexPath.row]) == nil) {
+            if ((lowResolutionImages[indexPath.row]) == nil || isSearching) {
                 cell.posterImageView.setImageWith(lowResolutionImageRequest as URLRequest, placeholderImage: nil, success: { (lowResolutionImageRequest, lowResolutionImageResponse, lowResolutionImage) -> Void in
                     
                     //if lowResolutionImageResponse != nil  {
@@ -258,6 +271,8 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
                     
                     self.lowResolutionImages[indexPath.row] = lowResolutionImage
 
+                    //self.lowResolutionImages["\(self.filteredMovies?[indexPath.row]["title"])"] = lowResolutionImage
+                    
                     cell.posterImageView.image = lowResolutionImage
                     
                     UIView.animate(withDuration: 0.3, animations: { () -> Void in
@@ -268,7 +283,9 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
                         
                         if (finished) {
                             
-                            if (self.highResolutionImages[indexPath.row] == nil) {
+                            // print(self.filteredMovies?[indexPath.row]["title"] ?? "Hi")
+                            
+                            if (self.highResolutionImages[indexPath.row] == nil || self.isSearching) {
                                 
                                 // Start download high resolution image
                                 cell.posterImageView.setImageWith(highResolutionImageRequest as URLRequest, placeholderImage: nil, success: { (highResolutionImageRequest, highResolutionImageResponse, highResolutionImage) -> Void in
@@ -277,7 +294,7 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
                                     print("start download high resolution image")
                                     
                                     self.highResolutionImages[indexPath.row] = highResolutionImage
-                                    
+                                    //self.highResolutionImages["\(self.filteredMovies?[indexPath.row]["title"])"] = highResolutionImage
                                     cell.posterImageView.image = highResolutionImage
                                     
                                     
@@ -286,11 +303,13 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
                                     print("Load high resolution image failed")
                                     
                                 }))
+                            
                             } else {
                                 print("high resolution image was cached")
                                 
                                 cell.posterImageView.image = self.highResolutionImages[indexPath.row]
                             }
+                            
                         }
                         
                     })
@@ -301,6 +320,7 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
                     print("Failed to load image")
                 })
 
+            
             } else {
                 if (highResolutionImages[indexPath.row] == nil) {
                     // Start download high resolution image
@@ -319,14 +339,16 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
                         print("Load high resolution image failed")
                         
                     }))
+                
                 } else {
                     print("high resolution image was cached")
                     cell.posterImageView.image = self.highResolutionImages[indexPath.row]
                 }
+            
                 
                 
             }
-
+            
             
         }
  
