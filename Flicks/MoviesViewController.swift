@@ -26,6 +26,15 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
     
     var endpoint: String!
     
+    var lowResolutionImages: [UIImage?]!
+    var highResolutionImages: [UIImage?]!
+    
+    var refreshControl: UIRefreshControl!
+    var refreshLoadingView: UIView!
+    var refreshColorView: UIView!
+    var isRefreshIconsOverlap = false
+    var isRefreshAnimating = false
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -69,8 +78,10 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
             navigationBar.barTintColor = UIColor.black
         }
         
+        
         // Initialize a UIRefreshControl
         let refreshControl = UIRefreshControl()
+        
         
         // Bind the action to the refresh control
         refreshControl.addTarget(self, action: #selector(refreshControlAction(refreshControl:)), for: UIControlEvents.valueChanged)
@@ -79,6 +90,8 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         collectionView.insertSubview(refreshControl, at: 0)
         
         refreshControlAction(refreshControl: refreshControl)
+ 
+
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -98,7 +111,6 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         
         let apiKey = "d495b21c5c2a1a4a346cc03313315968"
         
-        print(endpoint)
         
         let url = URL(string: "https://api.themoviedb.org/3/movie/" + endpoint + "?api_key=\(apiKey)")
         
@@ -119,11 +131,17 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
                     self.movies = dataDictionary["results"] as? [NSDictionary]
                     self.filteredMovies = self.movies
                     
+                    self.lowResolutionImages = [UIImage?](repeating: nil, count: (self.movies?.count)!)
+                    self.highResolutionImages = [UIImage?](repeating: nil, count: (self.movies?.count)!)
+                    
                     // Reload the collectionView now that there is new data
                     self.collectionView.reloadData()
                     
                     // Tell the refreshControl to stop spinning
                     refreshControl.endRefreshing()
+                        
+
+                    
                 }
             }
         }
@@ -203,6 +221,8 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         let title = movie["title"] as! String
         let rating = String(format: "%.1f", movie["vote_average"] as! Float)
         
+        
+        
         cell.title.text = title
         cell.rating.text = rating
         
@@ -210,59 +230,97 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         let highResolutionBaseUrl = "http://image.tmdb.org/t/p/original"
         
         if let posterPath = movie["poster_path"] as? String {
+
             let lowResolutionImageUrl = lowResolutionBaseUrl + posterPath
             let highResolutionImageUrl = highResolutionBaseUrl + posterPath
             
             let lowResolutionImageRequest = NSURLRequest(url: NSURL(string: lowResolutionImageUrl)! as URL)
             let highResolutionImageRequest = NSURLRequest(url: NSURL(string: highResolutionImageUrl)! as URL)
+
             
-            
-            cell.posterImageView.setImageWith(lowResolutionImageRequest as URLRequest, placeholderImage: nil, success: { (lowResolutionImageRequest, lowResolutionImageResponse, lowResolutionImage) -> Void in
-                
-                //if lowResolutionImageResponse != nil  {
-                print("download low resolution image")
-                cell.posterImageView.alpha = 0.0
-                cell.posterImageView.image = lowResolutionImage
-                
-                UIView.animate(withDuration: 0.3, animations: { () -> Void in
+            if ((lowResolutionImages[indexPath.row]) == nil) {
+                cell.posterImageView.setImageWith(lowResolutionImageRequest as URLRequest, placeholderImage: nil, success: { (lowResolutionImageRequest, lowResolutionImageResponse, lowResolutionImage) -> Void in
                     
-                    cell.posterImageView.alpha = 1.0
+                    //if lowResolutionImageResponse != nil  {
+                    print("download low resolution image")
+                    cell.posterImageView.alpha = 0.0
                     
-                }, completion: { (success) -> Void in
+                    self.lowResolutionImages[indexPath.row] = lowResolutionImage
+
+                    cell.posterImageView.image = lowResolutionImage
+                    
+                    UIView.animate(withDuration: 0.3, animations: { () -> Void in
+                        
+                        cell.posterImageView.alpha = 1.0
+                        
+                    }, completion: { (finished) -> Void in
+                        
+                        if (finished) {
+                            
+                            if (self.highResolutionImages[indexPath.row] == nil) {
+                                
+                                // Start download high resolution image
+                                cell.posterImageView.setImageWith(highResolutionImageRequest as URLRequest, placeholderImage: nil, success: { (highResolutionImageRequest, highResolutionImageResponse, highResolutionImage) -> Void in
+                                    
+                                    
+                                    print("start download high resolution image")
+                                    
+                                    self.highResolutionImages[indexPath.row] = highResolutionImage
+                                    
+                                    cell.posterImageView.image = highResolutionImage
+                                    
+                                    
+                                }, failure: ({ (request, response, error) -> Void in
+                                    
+                                    print("Load high resolution image failed")
+                                    
+                                }))
+                            } else {
+                                print("high resolution image was cached")
+                                
+                                cell.posterImageView.image = self.highResolutionImages[indexPath.row]
+                            }
+                        }
+                        
+                    })
                     
                     
-                    
+                }, failure: {
+                    (imageRequest, imageResponse, error) -> Void in
+                    print("Failed to load image")
+                })
+
+            } else {
+                if (highResolutionImages[indexPath.row] == nil) {
                     // Start download high resolution image
                     cell.posterImageView.setImageWith(highResolutionImageRequest as URLRequest, placeholderImage: nil, success: { (highResolutionImageRequest, highResolutionImageResponse, highResolutionImage) -> Void in
                         
-                        if highResolutionImageResponse != nil {
-                            print("start download high resolution image")
-                        } else {
-                            print("high resolution image was cached")
-                        }
+                        
+                        print("start download high resolution image 2")
+                        print(indexPath.row)
+                        
                         
                         cell.posterImageView.image = highResolutionImage
+                        
                         
                     }, failure: ({ (request, response, error) -> Void in
                         
                         print("Load high resolution image failed")
                         
                     }))
-                    
-                    
-                    
-                })
+                } else {
+                    print("high resolution image was cached")
+                    cell.posterImageView.image = self.highResolutionImages[indexPath.row]
+                }
                 
                 
-            }, failure: {
-                (imageRequest, imageResponse, error) -> Void in
-                print("Failed to load image")
-            })
-            
-            
+            }
+
             
         }
  
+        
+        
         
         return cell
         
@@ -282,6 +340,8 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         // Deselect collection view after segue
         self.collectionView.deselectItem(at: indexPath!, animated: true)
     }
+
+    
     
     /*
     // MARK: - Navigation
