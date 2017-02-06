@@ -157,6 +157,9 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
                 print("Failed to fetch data")
                 self.networkErrorView.isHidden = false
                 
+                // Tell the refreshControl to stop spinning
+                refreshControl.endRefreshing()
+                
             }
         }
         
