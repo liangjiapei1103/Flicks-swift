@@ -48,6 +48,7 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         collectionView.dataSource = self
         collectionView.delegate = self
         
+        /*
         // Check whether internet is available
         if Reachability.isConnectedToNetwork()
         {
@@ -58,8 +59,8 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         {
             print("Internet Connection not Available!")
             networkErrorView.isHidden = false
-            
         }
+        */
         
         // Flowlayout
         flowLayout.scrollDirection = .vertical
@@ -122,8 +123,8 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         let request = URLRequest(url: url!, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)
         let session = { () -> URLSession in 
             let configuration = URLSessionConfiguration.default
-            configuration.timeoutIntervalForRequest = 5
-            configuration.timeoutIntervalForResource = 5
+            configuration.timeoutIntervalForRequest = 500
+            configuration.timeoutIntervalForResource = 500
             return URLSession(configuration: configuration, delegate: nil, delegateQueue: OperationQueue.main)
         }()
         
@@ -132,10 +133,13 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         
         let task: URLSessionDataTask = session.dataTask(with: request) { (data: Data?, response: URLResponse?, error: Error?) in
             
-            // Hide HUD once the network request comes back (must be done on main UI thread)
-            MBProgressHUD.hide(for: self.view, animated: true)
+            self.networkErrorView.isHidden = true
             
             if let data = data {
+                
+                // Hide HUD once the network request comes back (must be done on main UI thread)
+                MBProgressHUD.hide(for: self.view, animated: true)
+                
                 if let dataDictionary = try! JSONSerialization.jsonObject(with: data, options: []) as? NSDictionary {
                     
                     self.movies = dataDictionary["results"] as? [NSDictionary]
@@ -154,11 +158,19 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
                     self.networkErrorView.isHidden = true
                 }
             } else {
-                print("Failed to fetch data")
-                self.networkErrorView.isHidden = false
                 
-                // Tell the refreshControl to stop spinning
-                refreshControl.endRefreshing()
+                
+                
+                self.delay(3) {
+                    // Hide HUD once the network request comes back (must be done on main UI thread)
+                    MBProgressHUD.hide(for: self.view, animated: true)
+                    
+                    print("Failed to fetch data")
+                    self.networkErrorView.isHidden = false
+                    
+                    // Tell the refreshControl to stop spinning
+                    refreshControl.endRefreshing()
+                }
                 
             }
         }
@@ -377,6 +389,10 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         self.collectionView.deselectItem(at: indexPath!, animated: true)
     }
 
+    func delay(_ delay:Double, closure:@escaping ()->()) {
+        let when = DispatchTime.now() + delay
+        DispatchQueue.main.asyncAfter(deadline: when, execute: closure)
+    }
     
     
     /*

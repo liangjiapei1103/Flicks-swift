@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5361783C1E32A36400A96A5B /* Reachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5361783B1E32A36400A96A5B /* Reachability.swift */; };
 		5361783E1E32ACC400A96A5B /* CollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5361783D1E32ACC400A96A5B /* CollectionViewCell.swift */; };
 		53A0A64C1E33AFB8005AF59E /* DetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53A0A64B1E33AFB8005AF59E /* DetailViewController.swift */; };
 		53A0A64E1E33EDB6005AF59E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 53A0A64D1E33EDB6005AF59E /* Assets.xcassets */; };
@@ -21,7 +20,6 @@
 
 /* Begin PBXFileReference section */
 		34A2CBF58998076BCD60AE38 /* Pods_Flicks.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Flicks.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		5361783B1E32A36400A96A5B /* Reachability.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Reachability.swift; sourceTree = "<group>"; };
 		5361783D1E32ACC400A96A5B /* CollectionViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CollectionViewCell.swift; sourceTree = "<group>"; };
 		53A0A64B1E33AFB8005AF59E /* DetailViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DetailViewController.swift; sourceTree = "<group>"; };
 		53A0A64D1E33EDB6005AF59E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -76,7 +74,6 @@
 				53A0A64D1E33EDB6005AF59E /* Assets.xcassets */,
 				53AEFF6F1E3275F1006A841A /* LaunchScreen.storyboard */,
 				53AEFF721E3275F1006A841A /* Info.plist */,
-				5361783B1E32A36400A96A5B /* Reachability.swift */,
 			);
 			path = Flicks;
 			sourceTree = "<group>";
@@ -244,7 +241,6 @@
 				53AEFF671E3275F1006A841A /* AppDelegate.swift in Sources */,
 				53AEFF791E3277DB006A841A /* MoviesViewController.swift in Sources */,
 				53A0A64C1E33AFB8005AF59E /* DetailViewController.swift in Sources */,
-				5361783C1E32A36400A96A5B /* Reachability.swift in Sources */,
 				53AEFF7C1E327EC4006A841A /* MovieCell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
