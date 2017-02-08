@@ -48,20 +48,6 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         collectionView.dataSource = self
         collectionView.delegate = self
         
-        /*
-        // Check whether internet is available
-        if Reachability.isConnectedToNetwork()
-        {
-            print("Internet Connection Available!")
-            networkErrorView.isHidden = true
-        }
-        else
-        {
-            print("Internet Connection not Available!")
-            networkErrorView.isHidden = false
-        }
-        */
-        
         // Flowlayout
         flowLayout.scrollDirection = .vertical
         flowLayout.minimumLineSpacing = 0
@@ -217,8 +203,10 @@ class MoviesViewController: UIViewController, UISearchBarDelegate, UICollectionV
         isSearching = false
         
         // Show all movies again
-        filteredMovies = movies
-        collectionView.reloadData()
+        // filteredMovies = movies
+        
+        // self.collectionView.reloadData()
+        refresh(Any)
     }
     
     
